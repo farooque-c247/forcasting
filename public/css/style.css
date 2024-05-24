@@ -1,0 +1,31 @@
+html,
+body {
+    min-height: 100vh;
+}
+
+.title-block {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.tab-inner-block .nav-link {
+    border: none;
+    padding: 0.5rem 1.5rem;
+}
+
+.tab-inner-block .nav-link.active {
+    border-bottom: 2px solid #1059FF;
+}
+
+.common-form-block button.btn {
+    text-align: center;
+    margin: 0 auto;
+    display: block;
+}
+
+@media (max-width: 420px) {
+    .tab-inner-block .nav-link {
+        border: none;
+        padding: 0.5rem 0.5rem;
+    }
+}
