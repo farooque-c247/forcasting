@@ -8,7 +8,8 @@ use Phpml\Regression\LeastSquares;
 use Phpml\Dataset\ArrayDataset;
 use Phpml\CrossValidation\RandomSplit;
 use Phpml\Metric\Regression;
-
+use App\Exports\ReportExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class HomeController extends Controller
 {
@@ -34,7 +35,7 @@ class HomeController extends Controller
         // If the DateTime object was created successfully
         if ($dateTime !== false) {
             // Format the DateTime object to the desired format
-            return strtotime($dateTime->format('Y-m-d'));
+            return strtotime($dateTime->format('Y-m'));
         } 
     }
 
@@ -57,7 +58,7 @@ class HomeController extends Controller
 // Iterate through the array and organize the data
         foreach ($sample_data[0] as $item) {
        
-                $invoiceDate = strtotime($item['invoice_date']);
+                $invoiceDate = $this->changeTimeToMonth($item['invoice_date']);
                 $companyName = $item['company_name'];
                 $quantity = $item['quantity_on_order'];
                 $product = $item['product_name'];
@@ -76,50 +77,46 @@ class HomeController extends Controller
         }
 
 
-
-        
-
-        foreach($prepare_data as $customer){
+    
+    
+        $order_dates=[];
+        $targets=[];
+        $forecast = [];
+ 
+        foreach($prepare_data as $month=> $customer){
             foreach($customer as $key =>$product){
+               
+                foreach($product as $product_key =>$orders){
+                    $order_dates=[];
+                    $targets=[];
+                    foreach($orders as $order_key=>$order){
+                        $order_dates[]= [$order_key];
+                        $targets[]=$order;
+
+                    }    
               
+                
+                    if(count($order_dates)>=2){
+                        $regression = new LeastSquares();
+                    
+                        $regression->train($order_dates, $targets);
+                    
+                        $next_month = strtotime(date('Y-m-t',strtotime($month)));
+               
+                        $next_month_quantity = $regression->predict([$next_month]);
+                        $forecast[date('Y-M', $next_month)][] = [
+                            "quantity"=>round($next_month_quantity),
+                            "customer"=>$key,
+                            "product"=>$product_key
+                        ]; 
+                    }    
+                }   
+                
+          
             }
         }
-
-        foreach ($monthly_totals as $month => $quantity) {
-            $time_series[] = [$month];
-            $target[] = $quantity;
-        }
-
-
-
-        // Train the model
-        $regression = new LeastSquares();
-        $regression->train($time_series, $target);
-
-   
-
-        // Forecast for the next 12 months
-        $last_month = end($time_series);
-
-        $forecast = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $next_month = strtotime("+$i month", date('Y-m',$last_month[0]));
-            $next_month_quantity = $regression->predict([$next_month]);
-            $forecast[date('Y-m', $next_month)] = $next_month_quantity[0];
-        }
-
-        // Output the forecast
-        echo "12-Month Forecast:\n";
-        foreach ($forecast as $month => $quantity) {
-            echo "Month: $month - Quantity: $quantity\n";
-        }
-
-     
-
-    
-
+       // return Excel::download(new ReportExport($forecast), 'report' . date('YmdHis').'.xls', \Maatwebsite\Excel\Excel::XLS);
         
-        
-        return view('index');
+        return view('table-export',compact('forecast'));
     }
 }
