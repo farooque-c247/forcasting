@@ -35,7 +35,7 @@ class HomeController extends Controller
         // If the DateTime object was created successfully
         if ($dateTime !== false) {
             // Format the DateTime object to the desired format
-            return strtotime($dateTime->format('Y-m'));
+            return strtotime($dateTime->format('Y-m-t'));
         } 
     }
 
@@ -59,6 +59,7 @@ class HomeController extends Controller
         foreach ($sample_data[0] as $item) {
        
                 $invoiceDate = $this->changeTimeToMonth($item['invoice_date']);
+                $order_dates=strtotime($item['invoice_date']);
                 $companyName = $item['company_name'];
                 $quantity = $item['quantity_on_order'];
                 $product = $item['product_name'];
@@ -95,21 +96,22 @@ class HomeController extends Controller
 
                     }    
               
-                
+                    $next_month = strtotime(date('Y-m-t',strtotime($month)));
                     if(count($order_dates)>=2){
                         $regression = new LeastSquares();
                     
                         $regression->train($order_dates, $targets);
                     
-                        $next_month = strtotime(date('Y-m-t',strtotime($month)));
+                        
                
                         $next_month_quantity = $regression->predict([$next_month]);
+                        
                         $forecast[date('Y-M', $next_month)][] = [
                             "quantity"=>round($next_month_quantity),
                             "customer"=>$key,
                             "product"=>$product_key
                         ]; 
-                    }    
+                    }   
                 }   
                 
           
